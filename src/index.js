@@ -1,7 +1,8 @@
-/**
- * Public package boundary. Follow each export to its implementation and scenarios.
- * Views arrive from the application; user intents leave through an injected transport.
- */
-export { validateStudyView } from "./validate_study_view.js";
-export { renderStudy } from "./render_study.js";
-export { createStudyController } from "./study_controller.js";
+export { Board, fitBoardSize } from "../board/src/index.ts";
+export { Button } from "./Button.js";
+export { IconButton } from "./IconButton.js";
+export { PageHeader } from "./PageHeader.js";
+export { SectionHeader } from "./SectionHeader.js";
+export { Surface } from "./Surface.js";
+export { Dialog } from "./Dialog.js";
+export { StatusNotice } from "./StatusNotice.js";

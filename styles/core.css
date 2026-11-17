@@ -1,0 +1,19 @@
+@import '../board/styles/board.css';
+/* Scoped extraction from Tempo app/components/ui.css and globals.css, main 366cc346. */
+.tempo-core { --ink:#22251f; --muted:#73776e; --panel:#fbfaf6; --line:#deddd5; --green-dark:#344737; --sage:#dce3d8; --rust:#a0523d; --ui-font-control:Arial,Helvetica,sans-serif; --ui-font-display:Georgia,"Times New Roman",serif; --ui-radius-control:8px; --ui-radius-surface:12px; --ui-control-height:36px; --ui-control-height-touch:44px; --ui-border:var(--line); --ui-surface:var(--panel); --ui-primary:var(--green-dark); --ui-primary-hover:#293d2c; --ui-danger:var(--rust); --ui-focus:#496d91; }
+.tempo-core .ui-button { display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:var(--ui-control-height); padding:8px 12px; border:1px solid var(--ui-border); border-radius:var(--ui-radius-control); background:var(--ui-surface); color:var(--ink); font-family:var(--ui-font-control); font-size:13px; font-weight:700; line-height:1.2; text-decoration:none; cursor:pointer; }
+.tempo-core .ui-button[data-size="compact"] { padding:6px 9px; font-size:12px; }
+.tempo-core .ui-button[data-variant="primary"] { border-color:var(--ui-primary); background:var(--ui-primary); color:white; }
+.tempo-core .ui-button[data-variant="quiet"] { border-color:transparent; background:transparent; color:var(--green-dark); }
+.tempo-core .ui-button[data-variant="danger"] { border-color:var(--ui-danger); background:var(--ui-danger); color:white; }
+.tempo-core .ui-button[data-variant="primary"]:hover:not(:disabled) { background-color:var(--ui-primary-hover); }
+.tempo-core .ui-button[data-variant="secondary"]:not([data-ui-custom]):hover:not(:disabled), .tempo-core .ui-button[data-variant="quiet"]:hover:not(:disabled) { background-color:var(--sage); }
+.tempo-core .ui-button:disabled { opacity:.55; cursor:not-allowed; }
+.tempo-core .ui-button:focus-visible { outline:3px solid var(--ui-focus); outline-offset:3px; }
+.tempo-core .ui-icon-button { padding:6px; min-width:var(--ui-control-height); }
+.tempo-core .ui-surface { border:1px solid var(--ui-border); border-radius:var(--ui-radius-surface); background:var(--ui-surface); }
+.tempo-core .training-header { max-width:1320px; margin:0 auto; padding:12px clamp(20px,4vw,64px) 10px; display:flex; align-items:end; justify-content:space-between; }
+.tempo-core .training-header h1 { margin:0; font-family:Georgia,"Times New Roman",serif; font-size:clamp(30px,3vw,43px); font-weight:500; letter-spacing:-.035em; }
+.tempo-core .ui-dialog { width:min(520px,calc(100% - 40px)); padding:32px; border:0; border-radius:15px; background:var(--panel); color:var(--ink); box-shadow:0 28px 80px rgba(20,24,19,.3); }
+.tempo-core .ui-dialog::backdrop { background:rgba(30,34,28,.48); backdrop-filter:blur(5px); }
+@media (max-width:767px), (pointer:coarse) { .tempo-core .ui-button {min-height:var(--ui-control-height-touch)} .tempo-core .ui-icon-button {min-width:var(--ui-control-height-touch)} }

@@ -1,21 +1,42 @@
 {
   "name": "@tempo-v2/core-components",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
-  "description": "Presentation and user-intent boundary for Tempo study",
+  "license": "GPL-3.0-or-later",
   "exports": {
     ".": {
-      "types": "./src/index.d.ts",
-      "default": "./src/index.js"
-    }
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./styles.css": "./styles/core.css",
+    "./assets/*": "./board/assets/*"
+  },
+  "files": [
+    "dist",
+    "board/styles",
+    "board/assets",
+    "board/notices",
+    "board/LICENSE",
+    "styles",
+    "NOTICE.original-mit",
+    "src",
+    "board/src",
+    "build.mjs",
+    "package-lock.json"
+  ],
+  "peerDependencies": {
+    "react": "^19.2.6"
+  },
+  "dependencies": {
+    "@lichess-org/chessground": "10.1.1"
   },
   "scripts": {
-    "test": "node --test"
+    "build": "node build.mjs",
+    "test": "node --test test/*.test.js"
   },
-  "engines": {
-    "node": ">=18"
-  },
-  "license": "MIT",
-  "repository": "https://github.com/tempo-v2/tempo-core-components"
+  "devDependencies": {
+    "esbuild": "0.27.3",
+    "react": "19.2.6"
+  }
 }
