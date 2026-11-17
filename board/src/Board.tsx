@@ -17,6 +17,7 @@ export const Board = forwardRef<BoardHandle, BoardProps>(function Board(props, r
     focus: () => hostRef.current?.focus(),
     readInputSnapshot: () => controllerRef.current?.readInputSnapshot() ?? null,
     clearInput: () => controllerRef.current?.clearInput(),
+    previewPromotion: (square, role) => controllerRef.current?.previewPromotion(square, role),
     clearInputBounds: () => controllerRef.current?.clearInputBounds(),
     selectSquare: square => controllerRef.current?.selectSquare(square),
   }), []);
@@ -25,7 +26,7 @@ export const Board = forwardRef<BoardHandle, BoardProps>(function Board(props, r
     const surface = surfaceRef.current;
     if (!surface) return;
     const controller = new BoardController();
-    controller.attach(createRenderer(surface, controller.initialConfiguration()));
+    controller.attach(createRenderer(surface, controller.initialConfiguration(props.coordinates)));
     controllerRef.current = controller;
     const refresh = () => controller.clearInputBounds();
     surface.addEventListener("mousedown", refresh, true);
@@ -93,7 +94,7 @@ export const Board = forwardRef<BoardHandle, BoardProps>(function Board(props, r
     className={`tempo-board ${props.className ?? ""}`} style={props.style}
     data-position-identity={props.positionIdentity} data-position-revision={props.positionRevision}
     data-fen={props.fen} data-orientation={props.orientation} data-mode={props.mode}>
-    <div className={`tempo-board-surface tempo-theme-${props.theme ?? "brown"} tempo-pieces-${props.pieceSet ?? "cburnett"}`}
+    <div className={`tempo-board-surface tempo-coordinates-${props.coordinates ?? "squares"} tempo-theme-${props.theme ?? "brown"} tempo-pieces-${props.pieceSet ?? "cburnett"}`}
       style={{ width: size, height: size, visibility: size ? "visible" : "hidden" }}>
       <div className="cg-wrap" ref={surfaceRef} />
     </div>
