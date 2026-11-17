@@ -1,0 +1,21 @@
+{
+  "name": "@tempo-v2/core-components",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Presentation and user-intent boundary for Tempo study",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./src/index.js"
+    }
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT",
+  "repository": "https://github.com/tempo-v2/tempo-core-components"
+}
