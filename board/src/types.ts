@@ -53,6 +53,8 @@ export interface BoardProps extends PositionIdentity {
   readonly check: BoardColor | false;
   readonly mode: BoardMode;
   readonly locked?: boolean;
+  /** Keep the renderer's submitted move while locked on the same position. */
+  readonly retainMoveOnLock?: boolean;
   readonly readOnly?: boolean;
   /** Supplied by the caller. Equivalent maps do not invalidate held input. */
   readonly destinations?: ReadonlyMap<Square, readonly Square[]>;
@@ -62,6 +64,7 @@ export interface BoardProps extends PositionIdentity {
   readonly drawingWhileLocked?: boolean;
   readonly theme?: BoardTheme;
   readonly pieceSet?: PieceSet;
+  readonly coordinates?: "squares" | "edges";
   readonly lastMove?: readonly [Square, Square];
   readonly shapes?: readonly BoardShape[];
   readonly drawnShapes?: readonly BoardShape[];
@@ -90,6 +93,8 @@ export interface BoardHandle {
   readInputSnapshot(): BoardInputSnapshot | null;
   /** Cancel pending input, fence deferred events, and restore the supplied FEN. */
   clearInput(): void;
+  /** Preview the chosen promotion on the pawn already moved to this square. */
+  previewPromotion(square: Square, role: Exclude<PieceRole, "pawn" | "king">): void;
   /** Refresh hit testing without replacing pieces or interrupting a drag. */
   clearInputBounds(): void;
   /** Keyboard seam; follows the same mode, lock, and supplied destinations. */

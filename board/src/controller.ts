@@ -2,7 +2,7 @@ import type { Api } from "@lichess-org/chessground/api";
 import type { Config } from "@lichess-org/chessground/config";
 import type { DrawShape } from "@lichess-org/chessground/draw";
 import { cancel as cancelDrawing } from "@lichess-org/chessground/draw";
-import type { BoardDiagnosticEvent, BoardInputSnapshot, BoardProps, BoardShape, Square } from "./types.js";
+import type { BoardDiagnosticEvent, BoardHandle, BoardInputSnapshot, BoardProps, BoardShape, Square } from "./types.js";
 import { copyDestinations, copyShapes, drawingShapes, rendererShapes, sameDestinations, sameShapes } from "./position.js";
 
 const brushes = {
@@ -65,9 +65,12 @@ export class BoardController {
     if (!this.active || !this.api) return;
     const previous = this.props;
     const modeChanged = previous !== undefined && previous.mode !== next.mode;
-    const invalidated = forceReset || !previous || previous.fen !== next.fen ||
+    const positionChanged = !previous || previous.fen !== next.fen ||
       previous.positionIdentity !== next.positionIdentity || previous.positionRevision !== next.positionRevision ||
-      previous.orientation !== next.orientation || previous.turn !== next.turn || modeChanged ||
+      previous.orientation !== next.orientation || previous.turn !== next.turn || modeChanged;
+    const retaining = Boolean(next.locked && next.retainMoveOnLock);
+    const wasRetaining = Boolean(previous?.locked && previous.retainMoveOnLock);
+    const invalidated = forceReset || !previous || positionChanged || retaining !== wasRetaining ||
       Boolean(previous.locked) !== Boolean(next.locked) || Boolean(previous.readOnly) !== Boolean(next.readOnly) ||
       (previous.drawingEnabled !== false) !== (next.drawingEnabled !== false) ||
       Boolean(previous.drawingWhileLocked) !== Boolean(next.drawingWhileLocked) ||
@@ -85,8 +88,10 @@ export class BoardController {
       // otherwise finishes through the replacement onChange handler.
       cancelDrawing(this.api.state);
       // Chessground moves pieces before its delayed callback; cancellation alone cannot restore them.
-      Object.assign(config, { fen: next.fen, orientation: next.orientation, turnColor: next.turn,
-        check: next.check, lastMove: next.lastMove ? [...next.lastMove] : undefined });
+      if (forceReset || positionChanged || !retaining) {
+        Object.assign(config, { fen: next.fen, orientation: next.orientation, turnColor: next.turn,
+          check: next.check, lastMove: next.lastMove ? [...next.lastMove] : undefined });
+      }
       const enabled = this.canInteract();
       Object.assign(config, this.events());
       config.movable = { ...config.movable, free: next.mode === "free",
@@ -103,7 +108,26 @@ export class BoardController {
         config.movable = { showDests: next.showDestinations !== false };
     }
     if (modeChanged) this.clearInputBounds();
-    if (Object.keys(config).length) { this.api.set(config); this.diagnostic("set", Object.keys(config)); }
+    const edges = next.coordinates === "edges";
+    const coordinatesChanged = edges !== (previous?.coordinates === "edges");
+    if (coordinatesChanged) {
+      config.coordinatesOnSquares = !edges;
+      config.ranksPosition = edges ? "left" : "right";
+    }
+    if (Object.keys(config).length) {
+      if (config.fen && wasRetaining && previous?.fen === next.fen) {
+        const animation = this.api.state.animation;
+        const enabled = animation.enabled;
+        animation.current = undefined;
+        animation.enabled = false;
+        this.api.set(config);
+        animation.enabled = enabled;
+      } else {
+        this.api.set(config);
+      }
+      this.diagnostic("set", Object.keys(config));
+    }
+    if (coordinatesChanged && previous) this.api.redrawAll();
     const autoShapes = next.shapes ?? [];
     const drawnShapes = next.drawnShapes ?? [];
     if (invalidated || !sameShapes(this.autoShapes, autoShapes)) {
@@ -118,8 +142,9 @@ export class BoardController {
     }
   }
 
-  initialConfiguration(): Config {
-    return { viewOnly: false, disableContextMenu: true, coordinates: true, coordinatesOnSquares: true,
+  initialConfiguration(coordinates: BoardProps["coordinates"]): Config {
+    return { viewOnly: false, disableContextMenu: true, coordinates: true,
+      coordinatesOnSquares: coordinates !== "edges", ranksPosition: coordinates === "edges" ? "left" : "right",
       animation: { enabled: !globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches, duration: 180 },
       premovable: { enabled: false }, predroppable: { enabled: false }, autoCastle: true,
       drawable: { brushes, visible: true, enabled: false },
@@ -146,6 +171,15 @@ export class BoardController {
   }
   geometryChanged(): void { this.diagnostic("redraw"); }
   clearInput(): void { if (this.props) this.update(this.props, true); }
+  previewPromotion: BoardHandle["previewPromotion"] = (square, role) => {
+    const state = this.api?.state;
+    if (!state || state.lastMove?.[1] !== square) return;
+    const piece = state.pieces.get(square);
+    if (piece?.role === "pawn") {
+      state.pieces.set(square, { ...piece, role });
+      state.dom.redraw();
+    }
+  };
   clearInputBounds(): void { this.api?.state.dom.bounds.clear(); }
   selectSquare(square: Square | null): void { if (this.canInteract()) this.api?.selectSquare(square); }
   destroy(): void {
