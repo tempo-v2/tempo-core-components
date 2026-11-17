@@ -1,1 +1,7 @@
-# tempo-core-components
+# Tempo Core Components
+
+Reusable React presentation, with no Tempo session or backend dependency. `Board`, `fitBoardSize`, `Button`, `IconButton`, `PageHeader`, `SectionHeader`, `Surface`, `Dialog`, and `StatusNotice` are public exports. Use `Board` for a position with caller-supplied legal destinations and opaque identity/revision. Use Button/IconButton for actions, headers and Surface for page structure, Dialog for scoped modal choices, and StatusNotice for feedback. Board styles and assets are public at `@tempo-v2/core-components/styles.css` and `@tempo-v2/core-components/assets/*`. React is a peer. Wrap consumers in `.tempo-core` for the scoped donor control and header styling. See `examples/standalone` for a packed-artifact consumer.
+
+Build with `npm install` then `npm run build`. The Board is extracted from Tempo `packages/board-ui` at `48769570a41011d5d01b47cf5e1c6e74c7aeec40`. Its GPL license, third-party notices and piece assets remain in `board/`; this package is GPL-3.0-or-later. It bundles Chessground, subject to those notices. Controls use the semantics of Tempo's BaseButton and presentation conventions from legacy main `366cc346976570cb7ab7de518957d2cd9eee46e1`.
+
+The build copies the pinned Chessground dependency's corresponding source and license into `dist/corresponding-sources` because the public JavaScript bundles that dependency. Board and Core sources and the build inputs are also included in the package.
