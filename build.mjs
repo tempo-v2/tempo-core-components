@@ -1,4 +1,7 @@
 import { build } from "esbuild";
+import { copyFile, cp, mkdir, rm } from "node:fs/promises";
+
+await rm("dist", { recursive: true, force: true });
 await build({
   entryPoints: ["src/index.js"],
   outfile: "dist/index.js",
@@ -8,7 +11,6 @@ await build({
   platform: "browser",
   external: ["react", "react/jsx-runtime"],
 });
-import { copyFile, cp, mkdir } from "node:fs/promises";
 await copyFile("src/index.d.ts", "dist/index.d.ts");
 await copyFile("board/src/types.ts", "dist/board-types.d.ts");
 

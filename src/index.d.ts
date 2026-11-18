@@ -4,16 +4,15 @@ export type * from "./board-types.js";
 export const Board: React.ForwardRefExoticComponent<
   BoardProps & React.RefAttributes<BoardHandle>
 >;
-export function fitBoardSize(...args: any[]): any;
-export const Button: React.ComponentType<
-  React.ButtonHTMLAttributes<HTMLButtonElement> & {
-    variant?: string;
-    size?: string;
-    pending?: boolean;
-  }
->;
+export function fitBoardSize(availableWidth: number, maxSize?: number): number;
+export type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
+  variant?: string;
+  size?: string;
+  pending?: boolean;
+};
+export const Button: React.ComponentType<ButtonProps>;
 export const IconButton: React.ComponentType<
-  React.ButtonHTMLAttributes<HTMLButtonElement> & { label: string }
+  ButtonProps & { label: string }
 >;
 export const PageHeader: React.ComponentType<{
   title: React.ReactNode;
