@@ -1,4 +1,15 @@
+import { canMove } from "@lichess-org/chessground/board";
+import type { State } from "@lichess-org/chessground/state";
 import type { BoardProps, BoardShape, Square } from "./types.js";
+
+export function reportRejectedSelection(state: State, to: Square | undefined,
+  report: (from: Square, to: Square) => void): void {
+  const from = state.selected;
+  if (!from || from === "a0" || !to || from === to || !state.selectable.enabled ||
+      state.movable.color !== state.turnColor || state.pieces.get(from)?.color !== state.turnColor ||
+      state.pieces.get(to)?.color === state.turnColor || canMove(state, from, to)) return;
+  report(from, to);
+}
 
 export function copyShapes(shapes: readonly BoardShape[] = []): BoardShape[] {
   // TypeScript structural compatibility is not a runtime allowlist. In particular,

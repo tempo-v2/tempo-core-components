@@ -26,7 +26,7 @@ export const Board = forwardRef<BoardHandle, BoardProps>(function Board(props, r
     const surface = surfaceRef.current;
     if (!surface) return;
     const controller = new BoardController();
-    controller.attach(createRenderer(surface, controller.initialConfiguration(props.coordinates)));
+    controller.attach(createRenderer(surface, controller.initialConfiguration(props.coordinates), controller.reportRejectedMove));
     controllerRef.current = controller;
     const refresh = () => controller.clearInputBounds();
     surface.addEventListener("mousedown", refresh, true);
