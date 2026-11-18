@@ -3,7 +3,7 @@ import type { Config } from "@lichess-org/chessground/config";
 import type { DrawShape } from "@lichess-org/chessground/draw";
 import { cancel as cancelDrawing } from "@lichess-org/chessground/draw";
 import type { BoardDiagnosticEvent, BoardHandle, BoardInputSnapshot, BoardProps, BoardShape, Square } from "./types.js";
-import { copyDestinations, copyShapes, drawingShapes, rendererShapes, sameDestinations, sameShapes } from "./position.js";
+import { copyDestinations, copyShapes, drawingShapes, rendererShapes, reportRejectedSelection, sameDestinations, sameShapes } from "./position.js";
 
 const brushes = {
   green: { key: "g", color: "#4f8a59", opacity: 0.88, lineWidth: 10 },
@@ -25,6 +25,13 @@ export class BoardController {
   private drawnShapes: BoardShape[] = [];
 
   attach(api: Api): void { this.api = api; }
+
+  reportRejectedMove = (from: Square, to: Square): void => {
+    const props = this.props;
+    if (props?.mode !== "legal" || !this.canInteract()) return;
+    props.onRejectedMove?.({ from, to, positionIdentity: props.positionIdentity,
+      positionRevision: props.positionRevision });
+  };
 
   private canInteract(): boolean {
     return this.active && Boolean(this.props) && !this.props?.locked && !this.props?.readOnly;
@@ -181,7 +188,12 @@ export class BoardController {
     }
   };
   clearInputBounds(): void { this.api?.state.dom.bounds.clear(); }
-  selectSquare(square: Square | null): void { if (this.canInteract()) this.api?.selectSquare(square); }
+  selectSquare(square: Square | null): void {
+    if (!this.canInteract() || !this.api) return;
+    const state = this.api.state;
+    reportRejectedSelection(state, square ?? undefined, this.reportRejectedMove);
+    this.api.selectSquare(square);
+  }
   destroy(): void {
     if (!this.active) return;
     this.active = false;
