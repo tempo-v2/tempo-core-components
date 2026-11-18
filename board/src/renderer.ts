@@ -10,12 +10,16 @@ import { render, renderResized, updateBounds } from "@lichess-org/chessground/re
 import { render as renderAutoPieces, renderResized as resizeAutoPieces } from "@lichess-org/chessground/autoPieces";
 import { renderSvg } from "@lichess-org/chessground/svg";
 import { bindDocument } from "@lichess-org/chessground/events";
+import { canMove, getKeyAtDomPos, whitePov } from "@lichess-org/chessground/board";
 import * as drag from "@lichess-org/chessground/drag";
 import * as draw from "@lichess-org/chessground/draw";
-import { memo, isRightButton, createEl, setVisible } from "@lichess-org/chessground/util";
+import { eventPosition, memo, isRightButton, createEl, setVisible } from "@lichess-org/chessground/util";
 import type { MouchEvent } from "@lichess-org/chessground/types";
+import type { Square } from "./types.js";
+import { reportRejectedSelection } from "./position.js";
 
-export function createRenderer(element: HTMLElement, config: Config): Api {
+export function createRenderer(element: HTMLElement, config: Config,
+  reportRejectedMove: (from: Square, to: Square) => void): Api {
   const state = defaults() as State;
   configure(state, config);
   let alive = true;
@@ -77,7 +81,14 @@ export function createRenderer(element: HTMLElement, config: Config): Api {
       else if (state.drawable.current) draw.cancel(state);
       else if (input.shiftKey || isRightButton(input)) {
         if (state.drawable.enabled) draw.start(state, input);
-      } else if (!state.viewOnly) drag.start(state, input);
+      } else if (!state.viewOnly) {
+        if ((input.isTrusted || state.trustAllEvents) && (input.buttons ?? 0) <= 1 && (input.touches?.length ?? 0) <= 1) {
+          const position = eventPosition(input);
+          const square = position && getKeyAtDomPos(position, whitePov(state), state.dom.bounds());
+          if (square !== "a0") reportRejectedSelection(state, square, reportRejectedMove);
+        }
+        drag.start(state, input);
+      }
     };
     const onContextMenu = (event: Event) => { if (alive) event.preventDefault(); };
     elements.board.addEventListener("contextmenu", onContextMenu);
@@ -90,7 +101,24 @@ export function createRenderer(element: HTMLElement, config: Config): Api {
     };
   };
   redrawAll();
-  unbindDocument = bindDocument(state, resize);
+  // Observe the held piece before Chessground clears it on release.
+  const onRelease = (event: Event) => {
+    const current = state.draggable.current;
+    if (!alive || !current?.started || current.newPiece || state.drawable.current ||
+        state.movable.color !== state.turnColor || current.piece.color !== state.turnColor ||
+        (event.type === "touchend" && current.originTarget !== event.target)) return;
+    const to = getKeyAtDomPos(eventPosition(event as MouchEvent) ?? current.pos, whitePov(state), state.dom.bounds());
+    if (to && to !== "a0" && current.orig !== "a0" && to !== current.orig &&
+        !canMove(state, current.orig, to)) reportRejectedMove(current.orig, to);
+  };
+  document.addEventListener("mouseup", onRelease, true);
+  document.addEventListener("touchend", onRelease, true);
+  const unbindInput = bindDocument(state, resize);
+  unbindDocument = () => {
+    document.removeEventListener("mouseup", onRelease, true);
+    document.removeEventListener("touchend", onRelease, true);
+    unbindInput();
+  };
   observer?.observe(element);
   const api = start(state, redrawAll);
   const invalidateShapes = () => {

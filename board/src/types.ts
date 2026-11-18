@@ -79,6 +79,8 @@ export interface BoardProps extends PositionIdentity {
   /** Application keyboard bindings stay with the caller. */
   readonly onKeyDown?: KeyboardEventHandler<HTMLDivElement>;
   readonly onMove?: (event: MoveEvent) => void;
+  /** A move attempt to an on-board square outside the supplied legal destinations. */
+  readonly onRejectedMove?: (event: MoveEvent) => void;
   readonly onFreeMove?: (event: MoveEvent) => void;
   readonly onSelect?: (event: SelectEvent) => void;
   readonly onDrawingChange?: (event: DrawingEvent) => void;
