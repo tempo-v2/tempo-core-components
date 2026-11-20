@@ -11,26 +11,68 @@ import {
   StatusNotice,
 } from "@tempo-v2/core-components";
 import "@tempo-v2/core-components/styles.css";
+import whiteKing from "@tempo-v2/core-components/assets/merida/wK.svg";
+
+const startingFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+const promotionFen = "4k3/P7/8/8/8/8/8/4K3 w - - 0 1";
+const startDestinations = () => new Map([["e2", ["e4"]]]);
+
 function Demo() {
+  const board = React.useRef(null);
   const [open, setOpen] = React.useState(false);
+  const [fen, setFen] = React.useState(startingFen);
+  const [identity, setIdentity] = React.useState("start");
+  const [revision, setRevision] = React.useState(0);
+  const [destinations, setDestinations] = React.useState(startDestinations);
+  const [locked, setLocked] = React.useState(false);
+  const [readOnly, setReadOnly] = React.useState(false);
+  const [moves, setMoves] = React.useState([]);
+
+  function loadPromotion() {
+    setIdentity("promotion");
+    setRevision(0);
+    setFen(promotionFen);
+    setDestinations(new Map([["a7", ["a8"]]]));
+  }
+
   return (
     <main className="tempo-core">
       <PageHeader title="Core demo" subtitle="Standalone" />
       <Surface>
         <SectionHeader title="Board" />
         <Board
-          fen="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+          ref={board}
+          ariaLabel="Practice board"
+          fen={fen}
           orientation="white"
           turn="white"
           check={false}
           mode="legal"
-          positionIdentity="demo"
-          positionRevision={0}
-          destinations={new Map([["e2", ["e4"]]])}
-          onMove={(e) => (document.body.dataset.move = e.from + e.to)}
+          positionIdentity={identity}
+          positionRevision={revision}
+          destinations={destinations}
+          locked={locked}
+          readOnly={readOnly}
+          maxSize={320}
+          onMove={event => setMoves(previous => [...previous, event])}
         />
+        <div>
+          <Button onClick={() => setDestinations(new Map(destinations))}>Use equivalent destinations</Button>
+          <Button onClick={() => setIdentity("new-position")}>Change position identity</Button>
+          <Button onClick={() => setRevision(value => value + 1)}>Advance position revision</Button>
+          <Button onClick={() => setLocked(value => !value)} aria-pressed={locked}>Lock board</Button>
+          <Button onClick={() => setReadOnly(value => !value)} aria-pressed={readOnly}>Read only</Button>
+          <Button onClick={() => {
+            board.current.selectSquare("e2");
+            board.current.selectSquare("e4");
+          }}>Select e2 and e4</Button>
+          <Button onClick={() => board.current.clearInput()}>Restore supplied position</Button>
+          <Button onClick={loadPromotion}>Load promotion position</Button>
+          <Button onClick={() => board.current.previewPromotion("a8", "knight")}>Preview knight promotion</Button>
+        </div>
+        <output aria-label="Move events">{JSON.stringify(moves)}</output>
         <Button onClick={() => setOpen(true)}>Open</Button>
-        <IconButton label="Info">i</IconButton>
+        <IconButton label="Info"><img src={whiteKing} alt="" width="20" height="20" /></IconButton>
         <Button pending>Pending</Button>
         <StatusNotice>Ready</StatusNotice>
       </Surface>

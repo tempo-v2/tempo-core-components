@@ -9,3 +9,11 @@ test("built public package exposes presentation primitives", () => {
   }
   assert.equal(core.fitBoardSize(369, 380), 368);
 });
+
+test("packed public Board and Dialog honor the standalone consumer contract", {
+  skip: !process.env.TEMPO_PLAYWRIGHT && "Set TEMPO_PLAYWRIGHT to run against Chrome.",
+  timeout: 60_000,
+}, async t => {
+  const { checkPackedConsumer } = await import("./standalone.browser.mjs");
+  await checkPackedConsumer(t);
+});
