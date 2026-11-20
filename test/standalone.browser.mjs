@@ -139,5 +139,55 @@ export async function checkPackedConsumer(t) {
   await page.keyboard.press("Escape");
   await dialog.waitFor({ state: "hidden" });
   assert.ok(await button("Open").evaluate(element => document.activeElement === element));
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  const trigger = button("Show confirmation");
+  const toast = page.locator(".ui-toast");
+  const message = toast.getByText("Saved.", { exact: true });
+  await toast.waitFor({ state: "attached" });
+  assert.equal(await toast.getAttribute("role"), "status");
+  assert.equal(await toast.getAttribute("aria-atomic"), "true");
+  await trigger.click();
+  await message.waitFor();
+  assert.ok(await trigger.evaluate(element => document.activeElement === element));
+  assert.equal(await message.evaluate(element => getComputedStyle(element).transitionDuration), "0.2s");
+
+  const firstMessage = await message.elementHandle();
+  const triggerElement = await trigger.elementHandle();
+  await toast.evaluate((element, trigger) => {
+    const events = [];
+    window.toastEvents = events;
+    new MutationObserver(records => {
+      for (const record of records) {
+        if (record.type === "attributes") {
+          events.push({ kind: "fade", time: performance.now() });
+          if (events.length === 1) trigger.click();
+        } else if (record.addedNodes.length) {
+          events.push({
+            kind: "replace",
+            time: performance.now(),
+            opacity: getComputedStyle(record.addedNodes[0]).opacity,
+          });
+        } else {
+          events.push({ kind: "dismiss", time: performance.now() });
+        }
+      }
+    }).observe(element, { childList: true, subtree: true, attributes: true, attributeFilter: ["data-fading"] });
+  }, triggerElement);
+  await page.waitForFunction(element => !element.isConnected, firstMessage);
+  await message.waitFor({ state: "detached" });
+  const toastEvents = await page.evaluate(() => window.toastEvents);
+  assert.deepEqual(toastEvents.map(event => event.kind), ["fade", "dismiss", "replace", "fade", "dismiss"]);
+  assert.equal(toastEvents[2].opacity, "1");
+  assert.ok(toastEvents[3].time - toastEvents[2].time >= 3900);
+  assert.ok(toastEvents[4].time - toastEvents[3].time >= 175);
+  assert.equal(await toast.count(), 1);
+
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await trigger.click();
+  await message.waitFor();
+  assert.equal(await message.evaluate(element => getComputedStyle(element).transitionDuration), "0s");
+  await message.waitFor({ state: "detached" });
+  assert.deepEqual(await page.evaluate(() => window.toastEvents.slice(-2).map(event => event.kind)),
+    ["replace", "dismiss"]);
   assert.deepEqual(pageErrors, []);
 }
