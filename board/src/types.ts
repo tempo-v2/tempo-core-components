@@ -1,4 +1,4 @@
-import type { CSSProperties, KeyboardEventHandler, PointerEventHandler } from "react";
+import type { CSSProperties, KeyboardEventHandler } from "react";
 
 export type BoardColor = "white" | "black";
 export type Square = `${"a" | "b" | "c" | "d" | "e" | "f" | "g" | "h"}${1 | 2 | 3 | 4 | 5 | 6 | 7 | 8}`;
@@ -69,10 +69,10 @@ export interface BoardProps extends PositionIdentity {
   readonly shapes?: readonly BoardShape[];
   readonly drawnShapes?: readonly BoardShape[];
   readonly maxSize?: number;
-  /** Opt in for a main desktop board. The chosen size lives in this mount. */
-  readonly resizeMode?: "desktop";
-  /** Pointer input on the chess surface, independent of the resize handle. */
-  readonly onSurfacePointerDown?: PointerEventHandler<HTMLDivElement>;
+  /** Offer pointer resizing within the host width. The chosen size lives in this mount. */
+  readonly resizeMode?: "drag";
+  /** Called when a pointer goes down on the chess surface. */
+  readonly onSurfacePointerDown?: () => void;
   /** Optional heading/palette whose resize can translate the board. */
   readonly layoutAnchor?: HTMLElement | null;
   readonly ariaLabel?: string;

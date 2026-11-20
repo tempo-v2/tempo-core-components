@@ -27,6 +27,7 @@ function Demo() {
   const [destinations, setDestinations] = React.useState(startDestinations);
   const [locked, setLocked] = React.useState(false);
   const [readOnly, setReadOnly] = React.useState(false);
+  const [resizable, setResizable] = React.useState(true);
   const [moves, setMoves] = React.useState([]);
   const [notification, setNotification] = React.useState(null);
   const notificationId = React.useRef(0);
@@ -60,10 +61,11 @@ function Demo() {
           locked={locked}
           readOnly={readOnly}
           maxSize={320}
-          resizeMode="desktop"
+          resizeMode={resizable ? "drag" : undefined}
           onMove={event => setMoves(previous => [...previous, event])}
         />
         <div>
+          <Button onClick={() => setResizable(value => !value)}>Toggle board resizing</Button>
           <Button onClick={() => setDestinations(new Map(destinations))}>Use equivalent destinations</Button>
           <Button onClick={() => setIdentity("new-position")}>Change position identity</Button>
           <Button onClick={() => setRevision(value => value + 1)}>Advance position revision</Button>

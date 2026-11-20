@@ -113,11 +113,13 @@ export async function checkPackedConsumer(t) {
   await expectSize(320);
   await resize(-300);
   await expectSize(240);
+  const [cornerX, cornerY] = await position("h1");
+  assert(await board.evaluate((element, [x, y]) => element.contains(document.elementFromPoint(x, y)), [cornerX, cornerY]));
   await resize(40);
   await expectSize(280);
   await resize(400);
   await expectSize(320);
-  await resize(-48);
+  await resize(-45);
   await expectSize(272);
 
   await handle.evaluate(element => {
@@ -136,13 +138,13 @@ export async function checkPackedConsumer(t) {
   await expectSize(272);
   assert.deepEqual(await events(), []);
 
-  const [breakpointX, breakpointY] = await startResize();
-  await page.setViewportSize({ width: 760, height: 720 });
+  const [toggleX, toggleY] = await startResize();
+  await updateDuringInput("Toggle board resizing");
   await handle.waitFor({ state: "hidden" });
   await expectSize(320);
-  await page.mouse.move(breakpointX - 60, breakpointY - 30);
+  await page.mouse.move(toggleX - 60, toggleY - 30);
   await page.mouse.up();
-  await page.setViewportSize({ width: 1280, height: 720 });
+  await button("Toggle board resizing").click();
   await handle.waitFor();
   await expectSize(272);
 

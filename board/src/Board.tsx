@@ -7,8 +7,8 @@ import { BoardController } from "./controller.js";
 import { fitBoardSize } from "./position.js";
 import type { BoardHandle, BoardProps } from "./types.js";
 
-const desktopResizeQuery = "(min-width: 52rem) and (pointer: fine) and (hover: hover)";
 const minimumResizeSize = 240;
+const resizeGutter = 24;
 
 type ResizeDrag = {
   pointerId: number;
@@ -62,9 +62,7 @@ export const Board = forwardRef<BoardHandle, BoardProps>(function Board(props, r
     const dy = event.clientY - drag.y;
     if (!drag.moved && Math.hypot(dx, dy) < 4) return;
     drag.moved = true;
-    // The corner moves a full size increment horizontally and roughly half
-    // that vertically when the caller centers the board in its frame.
-    const delta = (dx + dy * 0.5) / 1.25;
+    const delta = (dx + dy) / Math.SQRT2;
     const max = availableSize.current;
     const next = Math.max(Math.min(minimumResizeSize, max), fitBoardSize(drag.size + delta, max));
     preferredSize.current = next;
@@ -113,25 +111,21 @@ export const Board = forwardRef<BoardHandle, BoardProps>(function Board(props, r
   useLayoutEffect(() => {
     const host = hostRef.current;
     if (!host) return;
-    const desktop = props.resizeMode === "desktop" ? window.matchMedia?.(desktopResizeQuery) : undefined;
     let disposed = false;
     const measure = () => {
       if (disposed) return;
-      const enabled = desktop?.matches ?? false;
       const width = host.getBoundingClientRect().width;
-      const limit = enabled
-        ? Math.min(width, Math.max(0, (window.visualViewport?.height ?? window.innerHeight) - 32))
-        : width;
-      const maximum = fitBoardSize(limit, props.maxSize);
+      const resizeLimit = fitBoardSize(width - resizeGutter, props.maxSize);
+      const enabled = props.resizeMode === "drag" && resizeLimit > minimumResizeSize;
+      const maximum = enabled ? resizeLimit : fitBoardSize(width, props.maxSize);
       availableSize.current = maximum;
-      if (!enabled || maximum <= minimumResizeSize) endResize();
-      setCanResize(enabled && maximum > minimumResizeSize);
+      if (!enabled) endResize();
+      setCanResize(enabled);
       applySize(enabled ? Math.min(preferredSize.current ?? maximum, maximum) : maximum);
       controllerRef.current?.clearInputBounds();
     };
     const observer = typeof ResizeObserver === "undefined" ? undefined : new ResizeObserver(measure);
     observer?.observe(host);
-    desktop?.addEventListener("change", measure);
     window.addEventListener("resize", measure);
     window.visualViewport?.addEventListener("resize", measure);
     measure();
@@ -139,7 +133,6 @@ export const Board = forwardRef<BoardHandle, BoardProps>(function Board(props, r
       disposed = true;
       endResize();
       observer?.disconnect();
-      desktop?.removeEventListener("change", measure);
       window.removeEventListener("resize", measure);
       window.visualViewport?.removeEventListener("resize", measure);
     };

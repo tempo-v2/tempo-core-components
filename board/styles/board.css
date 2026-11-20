@@ -7,8 +7,8 @@
 .tempo-board-resize-handle {
   position: absolute;
   z-index: 12;
-  right: 3px;
-  bottom: 3px;
+  left: calc(100% + 3px);
+  bottom: 0;
   width: 18px;
   height: 18px;
   border: 1px solid rgb(0 0 0 / 45%);
