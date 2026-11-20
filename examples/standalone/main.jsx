@@ -60,6 +60,7 @@ function Demo() {
           locked={locked}
           readOnly={readOnly}
           maxSize={320}
+          resizeMode="desktop"
           onMove={event => setMoves(previous => [...previous, event])}
         />
         <div>

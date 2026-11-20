@@ -91,6 +91,61 @@ export async function checkPackedConsumer(t) {
     );
   }
 
+  const handle = page.locator(".tempo-board-resize-handle");
+  const expectSize = width => page.waitForFunction(width => {
+    const bounds = document.querySelector("cg-board")?.getBoundingClientRect();
+    return bounds?.width === width && bounds.height === width;
+  }, width);
+  const startResize = async () => {
+    const { x, y, width, height } = await handle.boundingBox();
+    const point = [x + width / 2, y + height / 2];
+    await page.mouse.move(...point);
+    await page.mouse.down();
+    return point;
+  };
+  const resize = async delta => {
+    const [x, y] = await startResize();
+    await page.mouse.move(x + delta, y + delta / 2, { steps: 4 });
+    await page.mouse.up();
+  };
+  await expectSize(320);
+  await handle.click();
+  await expectSize(320);
+  await resize(-300);
+  await expectSize(240);
+  await resize(40);
+  await expectSize(280);
+  await resize(400);
+  await expectSize(320);
+  await resize(-48);
+  await expectSize(272);
+
+  await handle.evaluate(element => {
+    element.addEventListener("pointerdown", event => {
+      element.dataset.pointerId = event.pointerId;
+    }, { once: true });
+  });
+  const [x, y] = await startResize();
+  await handle.evaluate(element => {
+    element.dispatchEvent(new PointerEvent("pointercancel", {
+      bubbles: true, pointerId: Number(element.dataset.pointerId),
+    }));
+  });
+  await page.mouse.move(x - 70, y - 35);
+  await page.mouse.up();
+  await expectSize(272);
+  assert.deepEqual(await events(), []);
+
+  const [breakpointX, breakpointY] = await startResize();
+  await page.setViewportSize({ width: 760, height: 720 });
+  await handle.waitFor({ state: "hidden" });
+  await expectSize(320);
+  await page.mouse.move(breakpointX - 60, breakpointY - 30);
+  await page.mouse.up();
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await handle.waitFor();
+  await expectSize(272);
+
   await hold("e2");
   await updateDuringInput("Use equivalent destinations");
   await release("e4");
