@@ -137,6 +137,7 @@ export async function checkPackedConsumer(t) {
   await page.mouse.up();
   await expectSize(272);
   assert.deepEqual(await events(), []);
+  assert.equal(await page.locator("output").getAttribute("data-surface-pointer-arguments"), null);
 
   const [toggleX, toggleY] = await startResize();
   await updateDuringInput("Toggle board resizing");
@@ -149,6 +150,7 @@ export async function checkPackedConsumer(t) {
   await expectSize(272);
 
   await hold("e2");
+  assert.equal(await page.locator("output").getAttribute("data-surface-pointer-arguments"), "0");
   await updateDuringInput("Use equivalent destinations");
   await release("e4");
   await expectCount(1);

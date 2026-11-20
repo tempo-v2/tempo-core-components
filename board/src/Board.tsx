@@ -160,7 +160,7 @@ export const Board = forwardRef<BoardHandle, BoardProps>(function Board(props, r
     data-fen={props.fen} data-orientation={props.orientation} data-mode={props.mode}>
     <div className={`tempo-board-surface tempo-coordinates-${props.coordinates ?? "squares"} tempo-theme-${props.theme ?? "brown"} tempo-pieces-${props.pieceSet ?? "cburnett"}`}
       style={{ width: size, height: size, visibility: size ? "visible" : "hidden" }}>
-      <div className="cg-wrap" ref={surfaceRef} onPointerDownCapture={props.onSurfacePointerDown} />
+      <div className="cg-wrap" ref={surfaceRef} onPointerDownCapture={() => props.onSurfacePointerDown?.()} />
       {canResize && (
         <div className="tempo-board-resize-handle" aria-hidden="true" title="Drag to resize board"
           onPointerDown={startResize} onPointerMove={moveResize} onPointerUp={finishResize}
