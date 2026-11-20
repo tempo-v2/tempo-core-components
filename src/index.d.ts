@@ -38,3 +38,8 @@ export const Dialog: React.ComponentType<{
   children?: React.ReactNode;
   onClose: () => void;
 }>;
+export type ToastNotification = Readonly<{ id: string | number; message: string }>;
+export const Toast: React.ComponentType<{
+  notification: ToastNotification | null;
+  onDismiss: (id: ToastNotification["id"]) => void;
+}>;

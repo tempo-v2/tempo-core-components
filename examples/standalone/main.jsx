@@ -9,6 +9,7 @@ import {
   Surface,
   Dialog,
   StatusNotice,
+  Toast,
 } from "@tempo-v2/core-components";
 import "@tempo-v2/core-components/styles.css";
 import whiteKing from "@tempo-v2/core-components/assets/merida/wK.svg";
@@ -27,6 +28,11 @@ function Demo() {
   const [locked, setLocked] = React.useState(false);
   const [readOnly, setReadOnly] = React.useState(false);
   const [moves, setMoves] = React.useState([]);
+  const [notification, setNotification] = React.useState(null);
+  const notificationId = React.useRef(0);
+  const dismiss = React.useCallback(id => {
+    setNotification(current => current?.id === id ? null : current);
+  }, []);
 
   function loadPromotion() {
     setIdentity("promotion");
@@ -75,7 +81,11 @@ function Demo() {
         <IconButton label="Info"><img src={whiteKing} alt="" width="20" height="20" /></IconButton>
         <Button pending>Pending</Button>
         <StatusNotice>Ready</StatusNotice>
+        <Button onClick={() => setNotification({ id: ++notificationId.current, message: "Saved." })}>
+          Show confirmation
+        </Button>
       </Surface>
+      <Toast notification={notification} onDismiss={dismiss} />
       <Dialog open={open} title="Choose" onClose={() => setOpen(false)}>
         <Button onClick={() => setOpen(false)}>Close</Button>
       </Dialog>

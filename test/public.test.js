@@ -4,13 +4,13 @@ import * as core from "../dist/index.js";
 
 test("built public package exposes presentation primitives", () => {
   for (const name of ["Board", "Button", "IconButton", "PageHeader", "SectionHeader",
-    "Surface", "Dialog", "StatusNotice"]) {
+    "Surface", "Dialog", "StatusNotice", "Toast"]) {
     assert.ok(core[name], name);
   }
   assert.equal(core.fitBoardSize(369, 380), 368);
 });
 
-test("packed public Board and Dialog honor the standalone consumer contract", {
+test("packed public controls honor the standalone consumer contract", {
   skip: !process.env.TEMPO_PLAYWRIGHT && "Set TEMPO_PLAYWRIGHT to run against Chrome.",
   timeout: 60_000,
 }, async t => {
