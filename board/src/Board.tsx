@@ -1,10 +1,23 @@
 "use client";
 
 import { createRenderer } from "./renderer.js";
-import { forwardRef, useImperativeHandle, useLayoutEffect, useRef, useState } from "react";
+import { forwardRef, useCallback, useImperativeHandle, useLayoutEffect, useRef, useState } from "react";
+import type { PointerEvent } from "react";
 import { BoardController } from "./controller.js";
 import { fitBoardSize } from "./position.js";
 import type { BoardHandle, BoardProps } from "./types.js";
+
+const minimumResizeSize = 240;
+const resizeGutter = 24;
+
+type ResizeDrag = {
+  pointerId: number;
+  target: HTMLDivElement;
+  x: number;
+  y: number;
+  size: number;
+  moved: boolean;
+};
 
 export const Board = forwardRef<BoardHandle, BoardProps>(function Board(props, ref) {
   const hostRef = useRef<HTMLDivElement>(null);
@@ -12,6 +25,53 @@ export const Board = forwardRef<BoardHandle, BoardProps>(function Board(props, r
   const controllerRef = useRef<BoardController | null>(null);
   const [size, setSize] = useState(0);
   const measuredSize = useRef(0);
+  const availableSize = useRef(0);
+  const preferredSize = useRef<number | null>(null);
+  const resizeDrag = useRef<ResizeDrag | null>(null);
+  const [canResize, setCanResize] = useState(false);
+
+  const applySize = useCallback((nextSize: number) => {
+    if (nextSize === measuredSize.current) return;
+    measuredSize.current = nextSize;
+    controllerRef.current?.geometryChanged();
+    setSize(nextSize);
+  }, []);
+
+  const endResize = useCallback(() => {
+    const drag = resizeDrag.current;
+    resizeDrag.current = null;
+    if (drag?.target.hasPointerCapture(drag.pointerId))
+      drag.target.releasePointerCapture(drag.pointerId);
+  }, []);
+
+  function startResize(event: PointerEvent<HTMLDivElement>) {
+    if (!canResize || !event.isPrimary || event.button !== 0 ||
+        (event.pointerType !== "mouse" && event.pointerType !== "pen") || resizeDrag.current) return;
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    resizeDrag.current = {
+      pointerId: event.pointerId, target: event.currentTarget,
+      x: event.clientX, y: event.clientY, size: measuredSize.current, moved: false,
+    };
+  }
+
+  function moveResize(event: PointerEvent<HTMLDivElement>) {
+    const drag = resizeDrag.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    const dx = event.clientX - drag.x;
+    const dy = event.clientY - drag.y;
+    if (!drag.moved && Math.hypot(dx, dy) < 4) return;
+    drag.moved = true;
+    const delta = (dx + dy) / Math.SQRT2;
+    const max = availableSize.current;
+    const next = Math.max(Math.min(minimumResizeSize, max), fitBoardSize(drag.size + delta, max));
+    preferredSize.current = next;
+    applySize(next);
+  }
+
+  function finishResize(event: PointerEvent<HTMLDivElement>) {
+    if (resizeDrag.current?.pointerId === event.pointerId) endResize();
+  }
 
   useImperativeHandle(ref, () => ({
     focus: () => hostRef.current?.focus(),
@@ -46,6 +106,7 @@ export const Board = forwardRef<BoardHandle, BoardProps>(function Board(props, r
   }, []);
 
   useLayoutEffect(() => { controllerRef.current?.update(props); });
+  useLayoutEffect(() => { controllerRef.current?.clearInputBounds(); }, [size]);
 
   useLayoutEffect(() => {
     const host = hostRef.current;
@@ -53,12 +114,14 @@ export const Board = forwardRef<BoardHandle, BoardProps>(function Board(props, r
     let disposed = false;
     const measure = () => {
       if (disposed) return;
-      const nextSize = fitBoardSize(host.getBoundingClientRect().width, props.maxSize);
-      if (nextSize !== measuredSize.current) {
-        measuredSize.current = nextSize;
-        controllerRef.current?.geometryChanged();
-        setSize(nextSize);
-      }
+      const width = host.getBoundingClientRect().width;
+      const resizeLimit = fitBoardSize(width - resizeGutter, props.maxSize);
+      const enabled = props.resizeMode === "drag" && resizeLimit > minimumResizeSize;
+      const maximum = enabled ? resizeLimit : fitBoardSize(width, props.maxSize);
+      availableSize.current = maximum;
+      if (!enabled) endResize();
+      setCanResize(enabled);
+      applySize(enabled ? Math.min(preferredSize.current ?? maximum, maximum) : maximum);
       controllerRef.current?.clearInputBounds();
     };
     const observer = typeof ResizeObserver === "undefined" ? undefined : new ResizeObserver(measure);
@@ -68,11 +131,12 @@ export const Board = forwardRef<BoardHandle, BoardProps>(function Board(props, r
     measure();
     return () => {
       disposed = true;
+      endResize();
       observer?.disconnect();
       window.removeEventListener("resize", measure);
       window.visualViewport?.removeEventListener("resize", measure);
     };
-  }, [props.maxSize]);
+  }, [applySize, endResize, props.maxSize, props.resizeMode]);
 
   useLayoutEffect(() => {
     if (!props.layoutAnchor || typeof ResizeObserver === "undefined") return;
@@ -96,7 +160,12 @@ export const Board = forwardRef<BoardHandle, BoardProps>(function Board(props, r
     data-fen={props.fen} data-orientation={props.orientation} data-mode={props.mode}>
     <div className={`tempo-board-surface tempo-coordinates-${props.coordinates ?? "squares"} tempo-theme-${props.theme ?? "brown"} tempo-pieces-${props.pieceSet ?? "cburnett"}`}
       style={{ width: size, height: size, visibility: size ? "visible" : "hidden" }}>
-      <div className="cg-wrap" ref={surfaceRef} />
+      <div className="cg-wrap" ref={surfaceRef} onPointerDownCapture={() => props.onSurfacePointerDown?.()} />
+      {canResize && (
+        <div className="tempo-board-resize-handle" aria-hidden="true" title="Drag to resize board"
+          onPointerDown={startResize} onPointerMove={moveResize} onPointerUp={finishResize}
+          onPointerCancel={finishResize} onLostPointerCapture={finishResize} />
+      )}
     </div>
   </div>;
 });

@@ -69,6 +69,10 @@ export interface BoardProps extends PositionIdentity {
   readonly shapes?: readonly BoardShape[];
   readonly drawnShapes?: readonly BoardShape[];
   readonly maxSize?: number;
+  /** Offer pointer resizing within the host width. The chosen size lives in this mount. */
+  readonly resizeMode?: "drag";
+  /** Called when a pointer goes down on the chess surface. */
+  readonly onSurfacePointerDown?: () => void;
   /** Optional heading/palette whose resize can translate the board. */
   readonly layoutAnchor?: HTMLElement | null;
   readonly ariaLabel?: string;

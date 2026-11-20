@@ -27,6 +27,8 @@ function Demo() {
   const [destinations, setDestinations] = React.useState(startDestinations);
   const [locked, setLocked] = React.useState(false);
   const [readOnly, setReadOnly] = React.useState(false);
+  const [resizable, setResizable] = React.useState(true);
+  const [surfacePointerArguments, setSurfacePointerArguments] = React.useState(null);
   const [moves, setMoves] = React.useState([]);
   const [notification, setNotification] = React.useState(null);
   const notificationId = React.useRef(0);
@@ -60,9 +62,12 @@ function Demo() {
           locked={locked}
           readOnly={readOnly}
           maxSize={320}
+          resizeMode={resizable ? "drag" : undefined}
+          onSurfacePointerDown={(...args) => setSurfacePointerArguments(args.length)}
           onMove={event => setMoves(previous => [...previous, event])}
         />
         <div>
+          <Button onClick={() => setResizable(value => !value)}>Toggle board resizing</Button>
           <Button onClick={() => setDestinations(new Map(destinations))}>Use equivalent destinations</Button>
           <Button onClick={() => setIdentity("new-position")}>Change position identity</Button>
           <Button onClick={() => setRevision(value => value + 1)}>Advance position revision</Button>
@@ -76,7 +81,7 @@ function Demo() {
           <Button onClick={loadPromotion}>Load promotion position</Button>
           <Button onClick={() => board.current.previewPromotion("a8", "knight")}>Preview knight promotion</Button>
         </div>
-        <output aria-label="Move events">{JSON.stringify(moves)}</output>
+        <output aria-label="Move events" data-surface-pointer-arguments={surfacePointerArguments}>{JSON.stringify(moves)}</output>
         <Button onClick={() => setOpen(true)}>Open</Button>
         <IconButton label="Info"><img src={whiteKing} alt="" width="20" height="20" /></IconButton>
         <Button pending>Pending</Button>
