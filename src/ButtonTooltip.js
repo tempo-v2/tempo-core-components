@@ -64,11 +64,18 @@ export function ButtonTooltip({ anchor, id, text, shortcut, enabled }) {
         tip.showPopover();
         openTooltip.set(doc, hide);
         visibleListeners = new AbortController();
-        const capture = { capture: true, signal: visibleListeners.signal };
+        const signal = visibleListeners.signal;
+        const capture = { capture: true, signal };
+        const intersection = new win.IntersectionObserver(([entry]) => {
+          const { width, height } = entry.intersectionRect;
+          if (!signal.aborted && (!width || !height)) hide();
+        });
+        intersection.observe(button);
+        signal.addEventListener("abort", () => intersection.disconnect(), { once: true });
         doc.addEventListener("keydown", dismissOnEscape, capture);
         doc.addEventListener("scroll", moveWithAnchor, capture);
         win.addEventListener("resize", moveWithAnchor, capture);
-        win.addEventListener("blur", hide, { signal: visibleListeners.signal });
+        win.addEventListener("blur", hide, { signal });
       }
       placeTooltip(button, tip);
     }

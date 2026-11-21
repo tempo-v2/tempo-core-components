@@ -44,6 +44,17 @@ async function checkButtonHints(page, url) {
   await page.keyboard.press("Space");
   assert.equal(await activations.innerText(), "1");
 
+  await page.keyboard.press("Shift+Tab");
+  await page.keyboard.press("Tab");
+  await tip.waitFor();
+  await info.evaluate(button => {
+    document.body.style.minHeight = "250vh";
+    window.scrollBy(0, button.getBoundingClientRect().bottom + 32);
+  });
+  assert.ok(await info.evaluate(button => button.getBoundingClientRect().bottom < 0));
+  await tip.waitFor({ state: "hidden" });
+  assert.ok(await info.evaluate(button => document.activeElement === button));
+
   await open.focus();
   await page.keyboard.press("Enter");
   const dialog = page.getByRole("dialog", { name: "Choose" });
