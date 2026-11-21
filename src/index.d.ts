@@ -5,10 +5,15 @@ export const Board: React.ForwardRefExoticComponent<
   BoardProps & React.RefAttributes<BoardHandle>
 >;
 export function fitBoardSize(availableWidth: number, maxSize?: number): number;
+/** A binding owned and handled by the consumer. `key` uses aria-keyshortcuts syntax. */
+export type ButtonShortcut = Readonly<{ key: string; label: string }>;
 export type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
+  ref?: React.Ref<HTMLButtonElement>;
   variant?: string;
   size?: string;
   pending?: boolean;
+  tooltip?: string;
+  shortcut?: ButtonShortcut;
 };
 export const Button: React.ComponentType<ButtonProps>;
 export const IconButton: React.ComponentType<
