@@ -21,6 +21,7 @@ const startDestinations = () => new Map([["e2", ["e4"]]]);
 function Demo() {
   const board = React.useRef(null);
   const [open, setOpen] = React.useState(false);
+  const [infoClicks, setInfoClicks] = React.useState(0);
   const [fen, setFen] = React.useState(startingFen);
   const [identity, setIdentity] = React.useState("start");
   const [revision, setRevision] = React.useState(0);
@@ -83,7 +84,10 @@ function Demo() {
         </div>
         <output aria-label="Move events" data-surface-pointer-arguments={surfacePointerArguments}>{JSON.stringify(moves)}</output>
         <Button onClick={() => setOpen(true)}>Open</Button>
-        <IconButton label="Info"><img src={whiteKing} alt="" width="20" height="20" /></IconButton>
+        <IconButton label="Info" onClick={() => setInfoClicks(count => count + 1)}>
+          <img src={whiteKing} alt="" width="20" height="20" />
+        </IconButton>
+        <span role="status" aria-label="Info activations">{infoClicks}</span>
         <Button pending>Pending</Button>
         <StatusNotice>Ready</StatusNotice>
         <Button onClick={() => setNotification({ id: ++notificationId.current, message: "Saved." })}>
@@ -92,7 +96,8 @@ function Demo() {
       </Surface>
       <Toast notification={notification} onDismiss={dismiss} />
       <Dialog open={open} title="Choose" onClose={() => setOpen(false)}>
-        <Button onClick={() => setOpen(false)}>Close</Button>
+        <Button tooltip="Close this dialog" shortcut={{ key: "Escape", label: "Esc" }}
+          onClick={() => setOpen(false)}>Close</Button>
       </Dialog>
     </main>
   );

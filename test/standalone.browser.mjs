@@ -10,8 +10,91 @@ import { fileURLToPath } from "node:url";
 const packageRoot = fileURLToPath(new URL("../", import.meta.url));
 const contentTypes = { ".html": "text/html", ".css": "text/css", ".js": "text/javascript", ".svg": "image/svg+xml" };
 
+async function checkButtonHints(page, url) {
+  await page.goto(url);
+  const tip = page.getByRole("tooltip");
+  const info = page.getByRole("button", { name: "Info", exact: true });
+  const activations = page.getByLabel("Info activations");
+  await info.evaluate(button => {
+    button.addEventListener("pointerenter", () => { window.infoEnteredAt = performance.now(); }, { once: true });
+    button.nextElementSibling.addEventListener("beforetoggle", event => {
+      if (event.newState === "open") window.infoOpenedAt = performance.now();
+    });
+  });
+  await info.hover();
+  assert.equal(await tip.count(), 0);
+  await tip.waitFor();
+  assert.equal(await tip.innerText(), "Info");
+  assert.ok(await page.evaluate(() => window.infoOpenedAt - window.infoEnteredAt >= 495));
+  await tip.hover();
+  await page.waitForTimeout(160);
+  assert.ok(await tip.isVisible(), "the pointer can reach the tooltip");
+  assert.equal(await activations.innerText(), "0");
+  await page.mouse.move(0, 0);
+  await tip.waitFor({ state: "hidden" });
+
+  const open = page.getByRole("button", { name: "Open", exact: true });
+  await open.focus();
+  await page.keyboard.press("Tab");
+  assert.ok(await info.evaluate(button => document.activeElement === button));
+  assert.ok(await tip.isVisible(), "keyboard focus shows the tooltip immediately");
+  await page.keyboard.press("Escape");
+  await tip.waitFor({ state: "hidden" });
+  assert.ok(await info.evaluate(button => document.activeElement === button));
+  await page.keyboard.press("Space");
+  assert.equal(await activations.innerText(), "1");
+
+  await page.keyboard.press("Shift+Tab");
+  await page.keyboard.press("Tab");
+  await tip.waitFor();
+  await info.evaluate(button => {
+    document.body.style.minHeight = "250vh";
+    window.scrollBy(0, button.getBoundingClientRect().bottom + 32);
+  });
+  assert.ok(await info.evaluate(button => button.getBoundingClientRect().bottom < 0));
+  await tip.waitFor({ state: "hidden" });
+  assert.ok(await info.evaluate(button => document.activeElement === button));
+
+  await open.focus();
+  await page.keyboard.press("Enter");
+  const dialog = page.getByRole("dialog", { name: "Choose" });
+  await dialog.evaluate(node => Object.assign(node.style, { width: "80px", padding: "4px", overflow: "hidden" }));
+  const close = dialog.getByRole("button", { name: "Close" });
+  await close.hover();
+  await tip.waitFor();
+  assert.equal(await tip.innerText(), "Close this dialog Esc");
+  assert.equal(await close.getAttribute("aria-keyshortcuts"), "Escape");
+  assert.equal(await close.getAttribute("aria-describedby"), await tip.getAttribute("id"));
+  const placement = await tip.evaluate(node => {
+    const { left, right, top, height } = node.getBoundingClientRect();
+    const dialogBounds = node.closest("dialog").getBoundingClientRect();
+    const x = left + 8 < dialogBounds.left ? left + 8 : right - 8;
+    const hit = document.elementFromPoint(x, top + height / 2);
+    return { outsideDialog: x < dialogBounds.left || x > dialogBounds.right, hitTooltip: node.contains(hit) };
+  });
+  assert.deepEqual(placement, { outsideDialog: true, hitTooltip: true });
+  await page.keyboard.press("Escape");
+  await tip.waitFor({ state: "hidden" });
+  assert.ok(await dialog.isVisible());
+  assert.ok(await close.evaluate(button => document.activeElement === button));
+  await page.keyboard.press("Escape");
+  await dialog.waitFor({ state: "hidden" });
+  assert.ok(await open.evaluate(button => document.activeElement === button));
+
+  // A top-right anchor must have room for the tooltip at a narrow width.
+  await page.setViewportSize({ width: 320, height: 600 });
+  await info.evaluate(button => Object.assign(button.style, { position: "fixed", right: "0", top: "0" }));
+  await info.hover();
+  await tip.waitFor();
+  assert.ok(await tip.evaluate(node => {
+    const bounds = node.getBoundingClientRect();
+    return bounds.left >= 0 && bounds.right <= innerWidth && bounds.bottom <= innerHeight &&
+      bounds.top >= node.previousElementSibling.getBoundingClientRect().bottom;
+  }));
+}
+
 export async function checkPackedConsumer(t) {
-  const { chromium } = await import(process.env.TEMPO_PLAYWRIGHT);
+  const { chromium, devices, webkit } = await import(process.env.TEMPO_PLAYWRIGHT);
   const temporary = mkdtempSync(join(tmpdir(), "tempo-core-packed-"));
   t.after(() => rmSync(temporary, { recursive: true, force: true }));
   const consumer = join(temporary, "consumer");
@@ -49,7 +132,8 @@ export async function checkPackedConsumer(t) {
   const page = await browser.newPage();
   const pageErrors = [];
   page.on("pageerror", error => pageErrors.push(error.message));
-  await page.goto(`http://127.0.0.1:${server.address().port}/`);
+  const url = `http://127.0.0.1:${server.address().port}/`;
+  await page.goto(url);
 
   const board = page.locator("cg-board");
   await board.waitFor({ state: "visible" });
@@ -248,5 +332,25 @@ export async function checkPackedConsumer(t) {
   await message.waitFor({ state: "detached" });
   assert.deepEqual(await page.evaluate(() => window.toastEvents.slice(-2).map(event => event.kind)),
     ["replace", "dismiss"]);
+  assert.deepEqual(pageErrors, []);
+
+  const chromeHints = await browser.newPage();
+  chromeHints.on("pageerror", error => pageErrors.push(error.message));
+  await checkButtonHints(chromeHints, url);
+  const safari = await webkit.launch();
+  t.after(() => safari.close());
+  const safariHints = await safari.newPage();
+  safariHints.on("pageerror", error => pageErrors.push(error.message));
+  await checkButtonHints(safariHints, url);
+  const phone = await safari.newPage({ ...devices["iPhone 15"], viewport: { width: 375, height: 600 } });
+  phone.on("pageerror", error => pageErrors.push(error.message));
+  await phone.goto(url);
+  const info = phone.getByRole("button", { name: "Info", exact: true });
+  const hitTarget = await info.boundingBox();
+  assert.ok(hitTarget?.width >= 44 && hitTarget?.height >= 44);
+  await info.tap();
+  assert.equal(await phone.getByLabel("Info activations").innerText(), "1");
+  await phone.waitForTimeout(550);
+  assert.equal(await phone.getByRole("tooltip").count(), 0);
   assert.deepEqual(pageErrors, []);
 }

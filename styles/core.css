@@ -11,12 +11,39 @@
 .tempo-core .ui-button:disabled { opacity:.55; cursor:not-allowed; }
 .tempo-core .ui-button:focus-visible { outline:3px solid var(--ui-focus); outline-offset:3px; }
 .tempo-core .ui-icon-button { padding:6px; min-width:var(--ui-control-height); }
+.tempo-core .ui-icon-button[data-variant="secondary"]:hover:not(:disabled) { background-color:var(--sage); }
+.tempo-core .ui-button-icon { display:inline-flex; align-items:center; justify-content:center; }
 .tempo-core .ui-surface { border:1px solid var(--ui-border); border-radius:var(--ui-radius-surface); background:var(--ui-surface); }
 .tempo-core .training-header { max-width:1320px; margin:0 auto; padding:12px clamp(20px,4vw,64px) 10px; display:flex; align-items:end; justify-content:space-between; }
 .tempo-core .training-header h1 { margin:0; font-family:Georgia,"Times New Roman",serif; font-size:clamp(30px,3vw,43px); font-weight:500; letter-spacing:-.035em; }
 .tempo-core .ui-dialog { width:min(520px,calc(100% - 40px)); padding:32px; border:0; border-radius:15px; background:var(--panel); color:var(--ink); box-shadow:0 28px 80px rgba(20,24,19,.3); }
 .tempo-core .ui-dialog::backdrop { background:rgba(30,34,28,.48); backdrop-filter:blur(5px); }
-@media (max-width:767px), (pointer:coarse) { .tempo-core .ui-button {min-height:var(--ui-control-height-touch)} .tempo-core .ui-icon-button {min-width:var(--ui-control-height-touch)} }
+@media (max-width:767px), (any-pointer:coarse) { .tempo-core .ui-button {min-height:var(--ui-control-height-touch)} .tempo-core .ui-icon-button {min-width:var(--ui-control-height-touch)} }
+
+.tempo-core .ui-button-tooltip {
+  display: none;
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  padding: 0.35rem 0.55rem;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: min(18rem, calc(100vw - 16px));
+  overflow-wrap: anywhere;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-primary);
+  color: white;
+  font: 0.8125rem/1.4 var(--ui-font-control);
+  box-shadow: 0 4px 12px rgb(20 24 19 / 0.24);
+}
+.tempo-core .ui-button-tooltip:popover-open { display: block; }
+.tempo-core .ui-button-tooltip kbd {
+  padding-inline: 0.25rem;
+  border: 1px solid currentColor;
+  border-radius: 0.2rem;
+  font: inherit;
+}
 
 .tempo-core.ui-toast {
   position: fixed;
